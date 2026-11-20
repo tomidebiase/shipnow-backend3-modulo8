@@ -12,7 +12,8 @@ export const productsRepository = {
 
     return ProductModel.find(filter)
       .select(projection)
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(50)
       .lean();
   },
 

@@ -1,19 +1,22 @@
 import mongoose from 'mongoose';
 import UserModel from '../models/user.model.js';
 
-const projection = 'firstName lastName email role documents createdAt updatedAt';
+const detailProjection = 'firstName lastName email role documents createdAt updatedAt';
+const listProjection = 'firstName lastName email role createdAt updatedAt';
 
 export const usersRepository = {
-  async findAll() {
+  async findAll({ page, limit }) {
     return UserModel.find({})
-      .select(projection)
-      .sort({ createdAt: -1 })
+      .select(listProjection)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit + 1)
       .lean();
   },
 
   async findById(id) {
     if (!mongoose.isValidObjectId(id)) return null;
-    return UserModel.findById(id).select(projection).lean();
+    return UserModel.findById(id).select(detailProjection).lean();
   },
 
   async findByEmail(email) {
@@ -28,12 +31,12 @@ export const usersRepository = {
   async updateById(id, data) {
     if (!mongoose.isValidObjectId(id)) return null;
     return UserModel.findByIdAndUpdate(id, data, { new: true, runValidators: true })
-      .select(projection)
+      .select(detailProjection)
       .lean();
   },
 
   async deleteById(id) {
     if (!mongoose.isValidObjectId(id)) return null;
-    return UserModel.findByIdAndDelete(id).select(projection).lean();
+    return UserModel.findByIdAndDelete(id).select(detailProjection).lean();
   }
 };

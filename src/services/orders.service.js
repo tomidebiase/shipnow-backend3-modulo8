@@ -1,4 +1,5 @@
 import { ordersRepository } from '../repositories/orders.repository.js';
+import { parsePagination, paginateItems } from '../utils/pagination.js';
 import { usersRepository } from '../repositories/users.repository.js';
 import { logger } from '../config/logger.js';
 import { ORDER_STATUS, ORDER_PRIORITY, USER_ROLES } from '../constants/index.js';
@@ -65,9 +66,9 @@ const normalizeState = (data) => {
 
 export const createOrdersService = (repository, { userRepository = usersRepository } = {}) => ({
   async getAll(query = {}) {
-    ensureObject(query, ['status']);
+    const pagination = parsePagination(query, { allowed: ['status'] });
     const filters = query.status === undefined ? {} : { status: assertValidOrderStatus(query.status) };
-    return repository.findAll(filters);
+    return paginateItems(await repository.findAll(filters, pagination), pagination);
   },
 
   async getById(id) {

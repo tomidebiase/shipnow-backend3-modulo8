@@ -2,8 +2,12 @@ import OrderModel from '../models/order.model.js';
 import DeliveryModel from '../models/delivery.model.js';
 
 export const ordersRepository = {
-  findAll(filters = {}) {
-    return OrderModel.find(filters).sort({ createdAt: -1 }).lean();
+  findAll(filters = {}, { page, limit }) {
+    return OrderModel.find(filters)
+      .sort({ createdAt: -1, _id: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit + 1)
+      .lean();
   },
   findById(id) {
     return OrderModel.findById(id).lean();

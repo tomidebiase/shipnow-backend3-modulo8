@@ -1,4 +1,5 @@
 import { usersRepository } from '../repositories/users.repository.js';
+import { parsePagination, paginateItems } from '../utils/pagination.js';
 import { logger } from '../config/logger.js';
 import { USER_ROLES } from '../constants/index.js';
 import { InvalidInputError, UserNotFoundError, DuplicateEmailError } from '../errors/domain-errors.js';
@@ -47,8 +48,9 @@ const normalizeUser = (input, partial = false) => {
 };
 
 export const createUsersService = (repository) => ({
-  async getAll() {
-    return repository.findAll();
+  async getAll(query = {}) {
+    const pagination = parsePagination(query);
+    return paginateItems(await repository.findAll(pagination), pagination);
   },
 
   async getById(id) {
