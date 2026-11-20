@@ -18,4 +18,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
+userSchema.index({ createdAt: -1, _id: -1 });
+
 export default mongoose.model('User', userSchema);

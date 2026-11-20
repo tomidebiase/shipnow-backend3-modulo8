@@ -33,5 +33,8 @@ const deliverySchema = new mongoose.Schema(
   { timestamps: true, versionKey: false }
 );
 
+deliverySchema.index({ createdAt: -1, _id: -1 });
+deliverySchema.index({ status: 1, createdAt: -1, _id: -1 });
+
 export default mongoose.model('Delivery', deliverySchema);
 
