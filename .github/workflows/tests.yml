@@ -1,14 +1,17 @@
-name: Pruebas ShipNow
+name: Pruebas y despliegue local ShipNow
 
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Obtener código
         uses: actions/checkout@v4
@@ -16,11 +19,34 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Instalar dependencias
-        run: npm install --no-audit --no-fund
+      - name: Versionar lockfile inicial
+        run: |
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --no-audit --no-fund
+            if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add package-lock.json
+              git commit -m "Versionar dependencias para instalaciones reproducibles"
+              git push origin HEAD:main
+            fi
+          fi
+      - name: Instalar dependencias reproducibles
+        run: npm ci --no-audit --no-fund
       - name: Verificar seguridad de dependencias
         run: npm audit --audit-level=moderate
-      - name: Ejecutar pruebas unitarias y funcionales
+      - name: Ejecutar tests unitarios y funcionales
         run: npm test
       - name: Comprobar repetibilidad y limpieza
         run: npm run test:functional
+      - name: Validar contenedores Docker
+        run: |
+          trap 'docker compose logs --no-color || true; docker compose down -v' EXIT
+          docker compose up --build -d
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:3000/api/health >/dev/null; then break; fi
+            sleep 2
+          done
+          curl --fail --show-error --silent http://127.0.0.1:3000/api/health
+          curl --fail --show-error --silent http://127.0.0.1:3000/api/docs/openapi.json >/dev/null
+          curl --fail --show-error --silent http://127.0.0.1:3000/api/users >/dev/null

@@ -622,3 +622,84 @@ npm run test:functional
 La batería de **Mocha, Chai y Supertest** incluye cargas correctas de PDF/JPEG/PNG, faltantes, tamaños superiores al máximo, firma inválida, campos inesperados, IDs incorrectos y entidades no encontradas. `mongodb-memory-server` provee una base de testing temporal; los hooks crean además una carpeta temporal de uploads, la limpian antes de cada caso y la eliminan al terminar. Los tests no necesitan MongoDB real ni conservan archivos.
 
 **Nota de alcance:** la validación de firma es una comprobación básica de tipo, no un análisis antivirus ni una verificación completa del contenido. Esta entrega no implementa autenticación ni permisos de acceso, por lo que la carga de documentos personales no debe habilitarse en un servidor público sin añadir esos controles.
+
+---
+
+## Pre-entrega Módulo 8 — Performance, producción y Docker
+
+### Paginación y rendimiento
+
+`GET /api/users`, `GET /api/orders` y `GET /api/deliveries` aceptan `page` y `limit`: de forma predeterminada `page=1` y `limit=20`, máximo `limit=50` y `page=1000`. La respuesta conserva `status: "success"`, un `payload` con los elementos y `pagination: { page, limit, hasNext }`. Pedidos y entregas admiten el filtro `status` con los valores propios del modelo. Los valores inválidos responden 400.
+
+Las consultas de MongoDB utilizan índices, `lean()`, ordenación y `skip()`/`limit(limit + 1)`, sin recuperar colecciones completas. `GET /api/products` devuelve como máximo 50 artículos. En caso de catálogos extremadamente grandes, sería recomendable reemplazar el desplazamiento por paginación mediante cursor.
+
+`GET /api/users` no muestra `documents` ni rutas de archivos personales; los metadatos permanecen en `GET /api/users/:id`. Multer conserva los límites de 5 MB, formatos PDF/PNG/JPEG y rollback de archivos inválidos. La creación de carpetas durante la carga es asíncrona. Los archivos no se publican con rutas estáticas ni se incluyen en el repositorio.
+
+### Configuración por entorno
+
+`PORT`, `MONGODB_URI` y `NODE_ENV` son obligatorias y se validan al iniciar: ante su ausencia o formato inválido la app no arranca. `NODE_ENV` admite `development`, `test`, `production`; `PORT` admite valores de 1 a 65535. Además:
+
+| Variable | Uso |
+| --- | --- |
+| `LOG_LEVEL` | Niveles `fatal`, `error`, `warning`, `info`, `http`, `debug`; por defecto `info` en producción |
+| `ENABLE_SWAGGER` | `true` por defecto; `false` oculta Swagger UI y su especificación |
+| `UPLOADS_DIR` | Ruta absoluta para archivos guardados, opcional |
+| `EXTERNAL_SERVICE_URL` | URL HTTP(S) opcional de una integración futura; solo HTTPS en producción |
+
+Los ejemplos están en `.env.example`, `.env.test.example` y `.env.production.example`. No se utiliza JWT en este módulo, así que no se inventa un secreto JWT ni respuestas 401. Antes de publicar datos reales es necesario agregar autenticación y autorización.
+
+### Health check y endpoints internos
+
+`GET /api/health` está disponible y devuelve `status`, `environment`, `uptimeSeconds` y `timestamp`, sin secretos, usuarios ni URI de MongoDB. Indica la vida del proceso HTTP, **no** la disponibilidad de la base.
+
+En producción, `GET /api/mocks/*` devuelve `403 MOCKS_DISABLED`; los endpoints POST de seeds responden `403 MOCK_SEED_DISABLED`; `GET /api/logger/test` responde `403 LOGGER_TEST_DISABLED`. Swagger se mantiene disponible por defecto para la demostración, pero se puede ocultar con `ENABLE_SWAGGER=false`. El logger utiliza por defecto `info` en consola en producción, con `error.log` rotativo para errores.
+
+### Instalación local y tests
+
+Se requiere Node.js 22.12 o superior y MongoDB accesible para iniciar el servidor.
+
+```bash
+npm ci
+cp .env.example .env
+npm start
+```
+
+En `.env` se configura la URI propia de MongoDB. Para ejecutar tests no hace falta una base real: usan Mocha, Chai, Supertest, MongoMemoryServer y limpieza de datos/archivos con hooks.
+
+```bash
+npm ci
+npm audit
+npm test
+npm run test:functional
+```
+
+Se incluye `package-lock.json` versionado y CI instala con `npm ci`. La suite también prueba los errores de PATCH y DELETE de usuarios, duplicación de email, bloqueo de mocks en producción, paginación y privacidad.
+
+### Docker
+
+Con Docker Desktop activo, para iniciar una **demostración local** con la API y MongoDB:
+
+```bash
+docker compose up --build -d
+docker compose ps
+curl http://localhost:3000/api/health
+curl http://localhost:3000/api/docs/openapi.json
+curl http://localhost:3000/api/users
+```
+
+Swagger UI: `http://localhost:3000/api/docs/`. Para detener los contenedores: `docker compose down`. Los volúmenes preservan los datos al detener; **no** ejecutar `docker compose down -v` si se quieren conservar.
+
+También se puede construir y ejecutar la API por separado:
+
+```bash
+docker build -t shipnow-modulo8 .
+docker volume create shipnow_uploads
+docker volume create shipnow_logs
+docker run --rm --name shipnow-api -p 3000:3000 --env-file .env.production -v shipnow_uploads:/app/uploads -v shipnow_logs:/app/logs shipnow-modulo8
+```
+
+Para ello se crea `.env.production` local a partir de `.env.production.example`, cambiando `MONGODB_URI` por una base accesible desde el contenedor (en Windows puede utilizarse `host.docker.internal`). El puerto interno de la imagen es `3000`; si se modifica `PORT`, también se ajusta `-p HOST:CONTENEDOR`.
+
+El Dockerfile usa Node 22, instala dependencias de producción mediante `npm ci --omit=dev`, copia `src/`, ejecuta con un usuario sin privilegios e incorpora un HEALTHCHECK. `.dockerignore` excluye secretos, `.git`, `node_modules`, logs, uploads, tests, coverage y temporales. Los logs y documentos necesitan volúmenes externos, permisos adecuados y una estrategia de retención y backup.
+
+**Seguridad:** `compose.yaml` incluye MongoDB sin autenticación solo para una demo en la computadora. No es una configuración lista para Internet; ShipNow tampoco implementa todavía control de acceso a documentos. No publicar la API con datos personales antes de implementar autenticación, permisos y políticas de conservación/borrado.

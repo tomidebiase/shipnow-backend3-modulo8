@@ -12,7 +12,9 @@
     "dev": "node --watch src/server.js",
     "test": "npm run test:unit && npm run test:functional",
     "test:unit": "node --test",
-    "test:functional": "mocha --file tests/functional/setup.js \"tests/functional/**/*.spec.js\" --timeout 120000 --exit"
+    "test:functional": "mocha --file tests/functional/setup.js \"tests/functional/**/*.spec.js\" --timeout 120000 --exit",
+    "audit": "npm audit --audit-level=moderate",
+    "check": "npm run audit && npm test"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

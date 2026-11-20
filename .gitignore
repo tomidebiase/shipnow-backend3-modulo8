@@ -11,3 +11,6 @@ coverage/
 *.tmp
 *.bak
 .DS_Store
+!.env.production.example
+*.tmp
+*.bak
