@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { DomainError } from '../errors/domain-errors.js';
 import {
   getMockUsers,
   getMockCouriers,
@@ -10,6 +11,13 @@ import {
 } from '../controllers/mocks.controller.js';
 
 const router = Router();
+
+router.use((req, _res, next) => {
+  if (process.env.NODE_ENV === 'production') {
+    return next(new DomainError(req.method === 'GET' ? 'MOCKS_DISABLED' : 'MOCK_SEED_DISABLED'));
+  }
+  next();
+});
 
 router.get('/users', getMockUsers);
 router.get('/couriers', getMockCouriers);

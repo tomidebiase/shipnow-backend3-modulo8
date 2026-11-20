@@ -10,10 +10,12 @@ import { RouteNotFoundError } from './errors/domain-errors.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { requestLogger } from './middlewares/request-logger.js';
 import loggerRouter from './routes/logger.router.js';
+import healthRouter from './routes/health.router.js';
 
 const app = express();
 
 app.use(requestLogger);
+app.use('/api/health', healthRouter);
 app.use(express.json());
 
 app.use('/api/products', productsRouter);
@@ -21,8 +23,9 @@ app.use('/api/users', usersRouter);
 app.use('/api/mocks', mocksRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/deliveries', deliveriesRouter);
-app.get('/api/docs/openapi.json', (req, res) => res.status(200).json(openapiSpec));
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
+const publicDocs = (_req, _res, next) => process.env.ENABLE_SWAGGER === 'false' ? next(new RouteNotFoundError()) : next();
+app.get('/api/docs/openapi.json', publicDocs, (req, res) => res.status(200).json(openapiSpec));
+app.use('/api/docs', publicDocs, swaggerUi.serve, swaggerUi.setup(openapiSpec, { explorer: true }));
 app.use('/api/logger', loggerRouter);
 
 app.use((req, res, next) => next(new RouteNotFoundError()));

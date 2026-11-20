@@ -1,6 +1,6 @@
 import multer from 'multer';
 import path from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { logger } from './logger.js';
@@ -31,12 +31,9 @@ const createUpload = (category, maxFields) => {
   const handler = multer({
     storage: multer.diskStorage({
       destination(_req, _file, done) {
-        try {
-          mkdirSync(directory, { recursive: true });
-          done(null, directory);
-        } catch (error) {
+        mkdir(directory, { recursive: true }).then(() => done(null, directory), error => {
           done(new DomainError('FILE_SAVE_FAILED', undefined, { cause: error }));
-        }
+        });
       },
       filename(_req, file, done) {
         done(null, `${randomUUID()}${ALLOWED_MIME_TYPES[file.mimetype].savedExtension}`);

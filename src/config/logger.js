@@ -33,6 +33,7 @@ export const createAppLogger = ({
   nodeEnv = process.env.NODE_ENV ?? 'development',
   logDir = path.join(projectRoot, 'logs'),
   consoleEnabled = nodeEnv !== 'test',
+  consoleLevel = process.env.LOG_LEVEL ?? (nodeEnv === 'production' ? 'info' : 'debug'),
   maxsize = LOG_ROTATION.maxsize,
   maxFiles = LOG_ROTATION.maxFiles
 } = {}) => {
@@ -50,7 +51,7 @@ export const createAppLogger = ({
 
   if (consoleEnabled) {
     transports.unshift(new winston.transports.Console({
-      level: nodeEnv === 'production' ? 'info' : 'debug'
+      level: consoleLevel
     }));
   }
 

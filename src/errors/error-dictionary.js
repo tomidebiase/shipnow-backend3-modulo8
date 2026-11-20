@@ -24,6 +24,7 @@ export const ERROR_DICTIONARY = Object.freeze({
   DUPLICATE_RECORD: defineError(409, 'El registro ya existe'),
   DUPLICATE_EMAIL: defineError(409, 'El correo electrónico ya está registrado'),
   MOCK_SEED_DISABLED: defineError(403, 'La carga de prueba no está disponible en producción'),
+  MOCKS_DISABLED: defineError(403, 'Los datos simulados no están disponibles en producción'),
   MOCK_SEED_FAILED: defineError(503, 'No se pudo completar la carga de datos de prueba'),
   MOCK_GENERATION_FAILED: defineError(500, 'No se pudieron generar los datos de prueba'),
   DATABASE_UNAVAILABLE: defineError(503, 'La base de datos no está disponible'),
