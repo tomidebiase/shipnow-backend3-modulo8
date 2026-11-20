@@ -28,7 +28,7 @@ test('OpenAPI JSON se publica en una ruta separada', async () => {
   const spec = await response.json();
   assert.equal(spec.openapi, '3.0.3');
   assert.deepEqual(spec.info, openapiSpec.info);
-  assert.equal(Object.keys(spec.paths).length, 18);
+  assert.equal(Object.keys(spec.paths).length, 20);
 });
 
 test('la consulta nueva de entregas acepta solo ObjectId válidos', async () => {

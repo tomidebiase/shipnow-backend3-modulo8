@@ -23,15 +23,16 @@ test('OpenAPI 3 con título, versión, servidor local y propósito', () => {
 
 test('las operaciones están organizadas por los seis módulos reales', () => {
   const names = openapiSpec.tags.map(tag => tag.name);
-  for (const name of ['Users', 'Orders', 'Deliveries', 'Mocks', 'Logger', 'Products']) {
+  for (const name of ['Health', 'Users', 'Orders', 'Deliveries', 'Mocks', 'Logger', 'Products']) {
     assert.ok(names.includes(name));
     assert.ok(getOperations().some(({ operation }) => operation.tags.includes(name)));
   }
-  assert.equal(getOperations().length, 25);
+  assert.equal(getOperations().length, 27);
 });
 
 test('los paths y métodos documentados coinciden con los routers Express', async () => {
   const routers = {
+    '/api/health': (await import('../src/routes/health.router.js')).default,
     '/api/users': (await import('../src/routes/users.router.js')).default,
     '/api/orders': (await import('../src/routes/orders.router.js')).default,
     '/api/deliveries': (await import('../src/routes/deliveries.router.js')).default,

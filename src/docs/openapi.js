@@ -5,6 +5,7 @@ import {
 import { schemas } from './schemas.js';
 import { orderPaths, orderSchemas } from './orders.documentation.js';
 import { uploadPaths, uploadSchemas } from './uploads.documentation.js';
+import { performancePaths, performanceSchemas, paginationParameters, listSuccess } from './performance.documentation.js';
 
 const ref = (name) => ({ $ref: `#/components/schemas/${name}` });
 const json = (schema) => ({
@@ -84,6 +85,7 @@ const mockRead = (tag, description, schema, options = {}) => ({
   ],
   responses: {
     '200': response('Datos simulados generados en memoria; no se guardan en MongoDB', schema),
+    '403': error('MOCKS_DISABLED: mocks GET bloqueados en producción'),
     '400': error(options.filters
       ? 'INVALID_MOCK_QUANTITY, INVALID_MOCK_DATA, INVALID_ORDER_STATUS o INVALID_ORDER_PRIORITY'
       : 'INVALID_MOCK_QUANTITY o INVALID_MOCK_DATA'),
@@ -120,6 +122,7 @@ export const openapiSpec = {
     description: 'Servidor local de desarrollo (configuración predeterminada)'
   }],
   tags: [
+    { name: 'Health', description: 'Estado del proceso HTTP' },
     { name: 'Users', description: 'Consulta y administración de usuarios' },
     { name: 'Orders', description: 'Consulta de pedidos previamente existentes' },
     { name: 'Deliveries', description: 'Consulta de entregas previamente existentes' },
@@ -127,15 +130,17 @@ export const openapiSpec = {
     { name: 'Logger', description: 'Herramientas internas de validación del registro de eventos' },
     { name: 'Products', description: 'Consulta y administración de productos' }
   ],
-  components: { schemas: { ...schemas, ...orderSchemas, ...uploadSchemas } },
+  components: { schemas: { ...schemas, ...orderSchemas, ...uploadSchemas, ...performanceSchemas } },
   paths: {
     '/api/users': {
       get: {
         tags: ['Users'],
         summary: 'Listar usuarios',
-        description: 'Devuelve los usuarios guardados en MongoDB.',
+        description: 'Devuelve usuarios sin datos de documentos personales, máximo 50 por página.',
+        parameters: paginationParameters,
         responses: {
-          '200': response('Lista de usuarios', success(list('Usuario'))),
+          '200': response('Lista paginada de usuarios (sin documents)', listSuccess('UsuarioResumen')),
+          '400': error('INVALID_INPUT: paginación o parámetros inválidos'),
           ...commonErrors
         }
       },
@@ -186,6 +191,7 @@ export const openapiSpec = {
     },
     ...orderPaths,
     ...uploadPaths,
+    ...performancePaths,
     '/api/orders/{id}': {
       get: {
         tags: ['Orders'],
@@ -260,7 +266,7 @@ export const openapiSpec = {
           schema: { type: 'string', enum: ['true', 'false'], default: 'false' }
         }],
         responses: {
-          '200': response('Listado de productos', success(list('Producto'))),
+          '200': response('Listado de productos (máximo 50)', success(list('Producto'))),
           ...commonErrors
         }
       },

@@ -1,4 +1,5 @@
 import { ORDER_PRIORITY, ORDER_STATUS } from '../constants/index.js';
+import { paginationParameters, listSuccess } from './performance.documentation.js';
 
 const objectId = { type: 'string', pattern: '^[a-fA-F0-9]{24}$' };
 const schemaRef = (name) => ({ $ref: `#/components/schemas/${name}` });
@@ -43,16 +44,16 @@ export const orderPaths = {
   '/api/orders': {
     get: {
       tags: ['Orders'],
-      summary: 'Listar pedidos',
+      summary: 'Listar pedidos con paginación',
       description: 'Lista los pedidos guardados en MongoDB. Se puede filtrar por status.',
-      parameters: [{
+      parameters: [...paginationParameters, {
         name: 'status',
         in: 'query',
         required: false,
         schema: { type: 'string', enum: Object.values(ORDER_STATUS) }
       }],
       responses: {
-        '200': response('Listado de pedidos', success({ type: 'array', items: schemaRef('Pedido') })),
+        '200': response('Listado paginado de pedidos', listSuccess('Pedido')),
         '400': error('INVALID_INPUT o INVALID_ORDER_STATUS: filtro no permitido'),
         ...commonErrors
       }

@@ -23,9 +23,10 @@ const payload = { user: userId, description: 'Paquete', deliveryAddress: 'Calle 
 
 test('lista pedidos mediante el repository', async () => {
   const { service } = fixture();
-  const list = await service.getAll();
-  assert.equal(list.length, 1);
-  assert.equal(list[0]._id, orderId);
+  const { items, pagination } = await service.getAll();
+  assert.equal(items.length, 1);
+  assert.equal(items[0]._id, orderId);
+  assert.deepEqual(pagination, { page: 1, limit: 20, hasNext: false });
 });
 
 test('rechaza filtros de estado inválidos', async () => {
