@@ -134,7 +134,8 @@ test('Swagger documenta la creación de pedidos sin inventar creación de entreg
   assert.ok(openapiSpec.paths['/api/orders'].post);
   assert.ok(openapiSpec.paths['/api/orders'].get);
   assert.ok(openapiSpec.paths['/api/orders/{id}/status'].patch);
-  assert.ok(!openapiSpec.paths['/api/deliveries']);
+  assert.ok(openapiSpec.paths['/api/deliveries'].get);
+  assert.ok(!openapiSpec.paths['/api/deliveries'].post);
   assert.ok(!openapiSpec.paths['/api/orders/{id}'].post);
   assert.ok(!openapiSpec.paths['/api/deliveries/{id}'].post);
   assert.match(openapiSpec.components.schemas.ItemPedido.description, /futura/);
